@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.Date;
 
 @Service
 public class TokenService {
@@ -26,6 +25,20 @@ public class TokenService {
                     .withIssuer("Forum Hub")
                     .withSubject(usuario.getUsername())
                     .withExpiresAt(expiracao(30))
+                    .sign(algorithm);
+        } catch (JWTCreationException exception) {
+            throw new RegraDeNegocioException("Erro ao gerar token JWT de acesso!");
+        }
+    }
+
+    public String gerarRefreshToken(Usuario usuario) {
+        try {
+            Algorithm algorithm = Algorithm.HMAC256("12345678");
+
+            return JWT.create()
+                    .withIssuer("Forum Hub")
+                    .withSubject(usuario.getId().toString())
+                    .withExpiresAt(expiracao(120))
                     .sign(algorithm);
         } catch (JWTCreationException exception) {
             throw new RegraDeNegocioException("Erro ao gerar token JWT de acesso!");

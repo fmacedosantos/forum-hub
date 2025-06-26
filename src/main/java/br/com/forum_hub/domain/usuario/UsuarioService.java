@@ -103,4 +103,14 @@ public class UsuarioService implements UserDetailsService {
 
         return usuario;
     }
+
+    @Transactional
+    public Usuario removerPerfil(Long id, @Valid DadosPerfil dados) {
+        var usuario = usuarioRepository.findById(id).orElseThrow();
+        var perfil = perfilRepository.findByNome(dados.perfilNome());
+
+        usuario.removerPerfil(perfil);
+
+        return usuario;
+    }
 }

@@ -6,8 +6,7 @@ import br.com.forum_hub.domain.topico.TopicoService;
 import br.com.forum_hub.domain.usuario.Usuario;
 import br.com.forum_hub.infra.exception.RegraDeNegocioException;
 import jakarta.transaction.Transactional;
-import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
-import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -43,8 +42,12 @@ public class RespostaService {
     }
 
     @Transactional
-    public Resposta atualizar(DadosAtualizacaoResposta dados) {
+    public Resposta atualizar(DadosAtualizacaoResposta dados, Usuario logado) {
         var resposta = buscarPeloId(dados.id());
+
+        if(hierarquiaService.usuarioNaoTemPermissoes(logado, resposta.getTopico().getAutor(), "ROLE_MODERADOR"))
+            throw new AccessDeniedException("Você não pode editar essa resposta!");
+
         return resposta.atualizarInformacoes(dados);
     }
 
@@ -69,9 +72,12 @@ public class RespostaService {
     }
 
     @Transactional
-    public void excluir(Long id) {
+    public void excluir(Long id, Usuario logado) {
         var resposta = buscarPeloId(id);
         var topico = resposta.getTopico();
+
+        if(hierarquiaService.usuarioNaoTemPermissoes(logado, topico.getAutor(), "ROLE_MODERADOR"))
+            throw new AccessDeniedException("Você não pode apagar essa resposta!");
 
         repository.deleteById(id);
 

@@ -1,5 +1,6 @@
 package br.com.forum_hub.domain.resposta;
 
+import br.com.forum_hub.domain.autenticacao.HierarquiaService;
 import br.com.forum_hub.domain.topico.Status;
 import br.com.forum_hub.domain.topico.TopicoService;
 import br.com.forum_hub.domain.usuario.Usuario;
@@ -15,12 +16,12 @@ import java.util.List;
 public class RespostaService {
     private final RespostaRepository repository;
     private final TopicoService topicoService;
-    private final RoleHierarchy roleHierarchy;
+    private final HierarquiaService hierarquiaService;
 
-    public RespostaService(RespostaRepository repository, TopicoService topicoService, RoleHierarchy roleHierarchy) {
+    public RespostaService(RespostaRepository repository, TopicoService topicoService, HierarquiaService hierarquiaService) {
         this.repository = repository;
         this.topicoService = topicoService;
-        this.roleHierarchy = roleHierarchy;
+        this.hierarquiaService = hierarquiaService;
     }
 
     @Transactional
@@ -57,7 +58,7 @@ public class RespostaService {
 
         var topico = resposta.getTopico();
 
-        if (usuarioTemPermissoes(logado, topico.getAutor()))
+        if (hierarquiaService.usuarioNaoTemPermissoes(logado, topico.getAutor(), "ROLE_INSTRUTOR"))
             throw new RegraDeNegocioException("Você não pode marcar essa resposta como solução!");
 
         if(topico.getStatus() == Status.RESOLVIDO)
@@ -65,19 +66,6 @@ public class RespostaService {
 
         topico.alterarStatus(Status.RESOLVIDO);
         return resposta.marcarComoSolucao();
-    }
-
-    private boolean usuarioTemPermissoes(Usuario logado, Usuario autor) {
-        for (GrantedAuthority autoridade: logado.getAuthorities()) {
-            var autoridadesAlcancaveis = roleHierarchy.getReachableGrantedAuthorities(List.of(autoridade));
-
-            for (GrantedAuthority perfil: autoridadesAlcancaveis) {
-                if (perfil.getAuthority().equals("ROLE_INSTRUTOR") || logado.getId().equals(autor.getId())) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     @Transactional
